@@ -1,43 +1,66 @@
-
 // Smooth scrolling
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', function (e) {
     e.preventDefault();
     const target = document.querySelector(this.getAttribute('href'));
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.scrollTo({
+        top: target.offsetTop - 80,
+        behavior: 'smooth'
+      });
+      
+      // Close mobile menu if open
+      const navLinks = document.querySelector('.nav-links');
+      if (navLinks.classList.contains('active')) {
+        navLinks.classList.remove('active');
+      }
     }
   });
 });
 
-// Intersection Observer for fade-in
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
+// Improved Intersection Observer for fade-in with sequential timing
+const observerOptions = {
+  threshold: 0.15,
+  rootMargin: '0px 0px -50px 0px'
+};
+
+const fadeObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
     if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
+      // Add staggered delay based on the element's position
+      setTimeout(() => {
+        entry.target.classList.add('visible');
+      }, i * 100);
     }
   });
-}, {
-  threshold: 0.1
-});
+}, observerOptions);
 
-document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
 
-// Stat number animation
+// Enhanced stat number animation with easing
 const animateStats = () => {
   document.querySelectorAll('.stat-number').forEach(stat => {
     const target = parseInt(stat.textContent.replace(/\D/g, ''));
-    let current = 0;
-    const increment = Math.ceil(target / 100);
-    const interval = setInterval(() => {
-      current += increment;
-      if (current >= target) {
+    const duration = 2000; // ms
+    const frameDuration = 1000/60; // 60fps
+    const totalFrames = Math.round(duration/frameDuration);
+    
+    // Use easeOutExpo for a more natural counting effect
+    const easeOutExpo = t => (t === 1) ? 1 : 1 - Math.pow(2, -10 * t);
+    
+    let frame = 0;
+    const counter = setInterval(() => {
+      frame++;
+      const progress = easeOutExpo(frame / totalFrames);
+      const currentCount = Math.round(target * progress);
+      
+      if (frame === totalFrames) {
         stat.textContent = target.toLocaleString();
-        clearInterval(interval);
+        clearInterval(counter);
       } else {
-        stat.textContent = current.toLocaleString();
+        stat.textContent = currentCount.toLocaleString();
       }
-    }, 30);
+    }, frameDuration);
   });
 };
 
@@ -48,13 +71,31 @@ const statObserver = new IntersectionObserver((entries) => {
       statObserver.disconnect();
     }
   });
-});
+}, { threshold: 0.5 });
 
 const statsSection = document.querySelector('.stats');
 if (statsSection) statObserver.observe(statsSection);
 
-// Mobile menu toggle
+// Improved Mobile menu toggle with accessibility
 document.querySelector('.mobile-menu')?.addEventListener('click', () => {
-  const links = document.querySelector('.nav-links');
-  links.style.display = links.style.display === 'flex' ? 'none' : 'flex';
+  const navLinks = document.querySelector('.nav-links');
+  navLinks.classList.toggle('active');
+  
+  // Update aria attributes for accessibility
+  const expanded = navLinks.classList.contains('active');
+  document.querySelector('.mobile-menu').setAttribute('aria-expanded', expanded);
 });
+
+// Add scroll-based header styling
+window.addEventListener('scroll', () => {
+  const header = document.querySelector('header');
+  if (window.scrollY > 100) {
+    header.style.boxShadow = 'var(--shadow)';
+  } else {
+    header.style.boxShadow = 'var(--shadow-sm)';
+  }
+});
+
+// Add passive scroll event listeners for performance
+document.addEventListener('touchstart', function() {}, {passive: true});
+document.addEventListener('touchmove', function() {}, {passive: true});
