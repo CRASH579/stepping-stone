@@ -76,15 +76,54 @@ const statObserver = new IntersectionObserver((entries) => {
 const statsSection = document.querySelector('.stats');
 if (statsSection) statObserver.observe(statsSection);
 
-// Improved Mobile menu toggle with accessibility
-document.querySelector('.mobile-menu')?.addEventListener('click', () => {
-  const navLinks = document.querySelector('.nav-links');
-  navLinks.classList.toggle('active');
-  
-  // Update aria attributes for accessibility
-  const expanded = navLinks.classList.contains('active');
-  document.querySelector('.mobile-menu').setAttribute('aria-expanded', expanded);
-});
+// Mobile menu functionality
+const mobileMenu = document.querySelector('.mobile-menu');
+const navLinks = document.querySelector('.nav-links');
+const body = document.body;
+
+if (mobileMenu && navLinks) {
+  // Set initial delay for menu items
+  const navItems = navLinks.querySelectorAll('li');
+  navItems.forEach((item, index) => {
+    item.style.setProperty('--delay', index);
+  });
+
+  mobileMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const isExpanded = mobileMenu.getAttribute('aria-expanded') === 'true';
+    
+    // Toggle the menu
+    mobileMenu.setAttribute('aria-expanded', String(!isExpanded));
+    mobileMenu.classList.toggle('active');
+    navLinks.classList.toggle('active');
+    
+    // Handle body scroll
+    body.style.overflow = isExpanded ? '' : 'hidden';
+  });
+
+  // Close menu when clicking a link
+  navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      navLinks.classList.remove('active');
+      mobileMenu.classList.remove('active');
+      mobileMenu.setAttribute('aria-expanded', 'false');
+      body.style.overflow = '';
+    });
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (navLinks.classList.contains('active') && 
+        !navLinks.contains(e.target) && 
+        !mobileMenu.contains(e.target)) {
+      navLinks.classList.remove('active');
+      mobileMenu.classList.remove('active');
+      mobileMenu.setAttribute('aria-expanded', 'false');
+      body.style.overflow = '';
+    }
+  });
+}
 
 // Add scroll-based header styling
 window.addEventListener('scroll', () => {
